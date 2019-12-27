@@ -1,4 +1,8 @@
-<?php namespace Gitlab\Api;
+<?php
+
+namespace Gitlab\Api;
+
+use Symfony\Component\OptionsResolver\Options;
 
 class Deployments extends AbstractApi
 {
@@ -10,6 +14,25 @@ class Deployments extends AbstractApi
     public function all($project_id, array $parameters = [])
     {
         $resolver = $this->createOptionsResolver();
+
+        $datetimeNormalizer = function (Options $resolver, \DateTimeInterface $value) {
+            return $value->format('c');
+        };
+
+        $resolver->setDefined('order_by')
+            ->setAllowedValues('order_by', ['id', 'created_at', 'updated_at']);
+
+        $resolver->setDefined('sort')
+            ->setAllowedValues('sort', ['asc', 'desc']);
+
+        $resolver->setDefined('updated_after')
+            ->setAllowedTypes('updated_after', \DateTimeInterface::class)
+            ->setNormalizer('updated_after', $datetimeNormalizer);
+
+        $resolver->setDefined('updated_before')
+            ->setAllowedTypes('updated_before', \DateTimeInterface::class)
+            ->setNormalizer('updated_before', $datetimeNormalizer);
+
         return $this->get($this->getProjectPath($project_id, 'deployments'), $resolver->resolve($parameters));
     }
 
